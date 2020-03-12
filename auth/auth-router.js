@@ -1,7 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const Users = require('../user/user-model');
-
+const jwt = require('jsonwebtoken');
+const secrets = require('../config/secrets')
 const router = express.Router();
 
 router.post("/register", async (req, res, next) => {
@@ -38,12 +39,26 @@ router.post("/login", async (req, res, next) => {
             })
         }
         req.session.user = user;
-        res.status(200).json({message: "Welcome user"})
+        const token = generateToken(user)
+        res.status(200).json({message: "Welcome user", token})
 
     }catch(err) {
         next(err);
     }
 })
+//Assume the token can be seen by anyone and dont send sensitive data.
+function generateToken(user) {
+    const payload = {
+        subject:user.id, //Who is this about
+        username: user.username
+    }
+    
+    const options = {
+        expiresIn: '1h'//this is an option provided by the jwt library.
+    }
+    return jwt.sign(payload, secrets.jwtSecret, options)
+}
+
 
 router.get('/logout', (req, res) => {
     if(req.session) {
